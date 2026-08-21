@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Rancho — Luck History (Current Managers)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; background:#0a0d16; color:#eef2fb;
+         font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:20px; margin:6px 0 2px; }
+  p.sub { color:#9fb0cc; font-size:13px; margin:0 0 16px; }
+  .card { background:#0f1420; border:1px solid #26304a; border-radius:12px; padding:14px; }
+  canvas { width:100% !important; }
+  footer { color:#6b7a99; font-size:11px; margin-top:14px; text-align:center; }
+</style></head>
+<body><div class="wrap">
+  <h1>🍀 El Rancho — Luck History</h1>
+  <p class="sub">Regular-season luck for current managers · 12 managers · seasons 2011–2025
+    · LUCK = actual wins − expected wins (all-play). Above 0 = fortunate; below 0 = robbed.</p>
+  <div class="card"><canvas id="c" height="520"></canvas></div>
+  <h1 style="margin-top:26px">📈 Cumulative Luck (career)</h1>
+  <p class="sub">Running total across seasons — how fortune has compounded over each manager's career.</p>
+  <div class="card"><canvas id="c2" height="480"></canvas></div>
+  <footer>Generated from el_rancho.db · regular season (weeks 1–14) · updated 2026-08-21 00:47 UTC</footer>
+</div>
+<script>
+const SEASONS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+const PER_SEASON = [{"label": "Nuriel Moghavem", "data": [null, null, null, null, null, null, -1.11, 2.11, 1.18, 2.36, -0.55, 0.36, -0.73, -0.73, 1.82], "borderColor": "#5aa9ff", "backgroundColor": "#5aa9ff", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Max Taxe", "data": [1.0, 0.78, 1.44, 1.78, 0.11, -3.22, -0.56, 0.11, 2.0, -1.36, -0.18, -1.82, 1.18, 0.82, -2.55], "borderColor": "#ff6b6b", "backgroundColor": "#ff6b6b", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Harley Parker", "data": [0.11, 1.44, 0.0, 0.11, 0.44, -0.56, 1.0, 1.78, -1.27, 0.45, -1.82, 2.73, 0.55, 0.55, 2.18], "borderColor": "#7fe3a0", "backgroundColor": "#7fe3a0", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Chase Crane", "data": [-0.89, -0.22, 2.11, -0.22, -0.56, 0.89, -0.44, -0.67, 0.36, 1.27, 0.45, 0.18, -1.91, -2.09, 0.55], "borderColor": "#ffcf5a", "backgroundColor": "#ffcf5a", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Max Gindi", "data": [2.33, -0.89, 1.33, -1.11, 2.44, 1.22, 2.11, -0.67, -1.73, 1.91, 1.36, -0.45, -1.09, 1.18, 0.18], "borderColor": "#c58bff", "backgroundColor": "#c58bff", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Eliot Wall", "data": [1.44, 1.22, -1.11, -0.89, 0.22, 1.33, 1.22, -2.33, 1.09, 1.64, 1.18, -2.73, 1.0, -2.82, 1.45], "borderColor": "#4dd0e1", "backgroundColor": "#4dd0e1", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Molly Porter", "data": [null, null, null, null, null, null, 0.11, -0.22, 0.18, -2.0, 0.36, 1.55, -0.64, 1.27, 0.0], "borderColor": "#ff9f43", "backgroundColor": "#ff9f43", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Matt Kremer", "data": [-1.56, -0.33, -1.67, -2.78, -1.0, 0.0, -0.22, -1.22, -1.0, -3.0, -3.18, -0.91, -2.18, 1.45, 1.55], "borderColor": "#f06292", "backgroundColor": "#f06292", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Michael Bilow", "data": [null, null, null, null, null, null, null, null, -1.64, -2.27, 1.09, 0.82, 1.36, 0.18, -1.64], "borderColor": "#9ccc65", "backgroundColor": "#9ccc65", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Sammi Wyman", "data": [0.33, 0.56, 0.33, 1.44, 1.44, 2.33, -1.33, 1.11, 0.27, -0.91, 0.55, -0.55, 0.09, -2.45, 0.09], "borderColor": "#26c6da", "backgroundColor": "#26c6da", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Jerry Porter", "data": [-0.33, -2.22, -1.56, 0.78, -0.56, -1.78, null, null, 1.0, 1.73, 0.64, 0.64, -0.91, 2.18, 0.18], "borderColor": "#ba68c8", "backgroundColor": "#ba68c8", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Wyatt Parker", "data": [null, null, null, 0.11, -3.11, 1.44, -0.78, 0.22, -0.36, 0.55, -0.09, 0.27, 3.27, 0.45, -3.82], "borderColor": "#ffd54f", "backgroundColor": "#ffd54f", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}];
+const CUMULATIVE = [{"label": "Nuriel Moghavem", "data": [null, 0.0, 0.0, 0.0, 0.0, 0.0, -1.11, 1.0, 2.18, 4.54, 3.99, 4.35, 3.62, 2.89, 4.71], "borderColor": "#5aa9ff", "backgroundColor": "#5aa9ff", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Max Taxe", "data": [1.0, 1.78, 3.22, 5.0, 5.11, 1.89, 1.33, 1.44, 3.44, 2.08, 1.9, 0.08, 1.26, 2.08, -0.47], "borderColor": "#ff6b6b", "backgroundColor": "#ff6b6b", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Harley Parker", "data": [0.11, 1.55, 1.55, 1.66, 2.1, 1.54, 2.54, 4.32, 3.05, 3.5, 1.68, 4.41, 4.96, 5.51, 7.69], "borderColor": "#7fe3a0", "backgroundColor": "#7fe3a0", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Chase Crane", "data": [-0.89, -1.11, 1.0, 0.78, 0.22, 1.11, 0.67, 0.0, 0.36, 1.63, 2.08, 2.26, 0.35, -1.74, -1.19], "borderColor": "#ffcf5a", "backgroundColor": "#ffcf5a", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Max Gindi", "data": [2.33, 1.44, 2.77, 1.66, 4.1, 5.32, 7.43, 6.76, 5.03, 6.94, 8.3, 7.85, 6.76, 7.94, 8.12], "borderColor": "#c58bff", "backgroundColor": "#c58bff", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Eliot Wall", "data": [1.44, 2.66, 1.55, 0.66, 0.88, 2.21, 3.43, 1.1, 2.19, 3.83, 5.01, 2.28, 3.28, 0.46, 1.91], "borderColor": "#4dd0e1", "backgroundColor": "#4dd0e1", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Molly Porter", "data": [null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.11, -0.11, 0.07, -1.93, -1.57, -0.02, -0.66, 0.61, 0.61], "borderColor": "#ff9f43", "backgroundColor": "#ff9f43", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Matt Kremer", "data": [-1.56, -1.89, -3.56, -6.34, -7.34, -7.34, -7.56, -8.78, -9.78, -12.78, -15.96, -16.87, -19.05, -17.6, -16.05], "borderColor": "#f06292", "backgroundColor": "#f06292", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Michael Bilow", "data": [null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.64, -3.91, -2.82, -2.0, -0.64, -0.46, -2.1], "borderColor": "#9ccc65", "backgroundColor": "#9ccc65", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Sammi Wyman", "data": [0.33, 0.89, 1.22, 2.66, 4.1, 6.43, 5.1, 6.21, 6.48, 5.57, 6.12, 5.57, 5.66, 3.21, 3.3], "borderColor": "#26c6da", "backgroundColor": "#26c6da", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Jerry Porter", "data": [-0.33, -2.55, -4.11, -3.33, -3.89, -5.67, -5.67, -5.67, -4.67, -2.94, -2.3, -1.66, -2.57, -0.39, -0.21], "borderColor": "#ba68c8", "backgroundColor": "#ba68c8", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}, {"label": "Wyatt Parker", "data": [null, 0.0, 0.0, 0.11, -3.0, -1.56, -2.34, -2.12, -2.48, -1.93, -2.02, -1.75, 1.52, 1.97, -1.85], "borderColor": "#ffd54f", "backgroundColor": "#ffd54f", "spanGaps": true, "tension": 0.25, "borderWidth": 2, "pointRadius": 2, "pointHoverRadius": 5}];
+const OPTS = (yTitle, zeroLine) => ({
+  responsive: true, interaction: { mode: 'nearest', intersect: false },
+  plugins: {
+    legend: { labels: { color: '#cdd8ee', boxWidth: 12, font: { size: 12 } } },
+    tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y > 0 ? '+' : ''}${c.parsed.y}` } },
+  },
+  scales: {
+    x: { ticks: { color: '#9fb0cc' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+    y: { ticks: { color: '#9fb0cc' },
+          grid: { color: (ctx) => (zeroLine && ctx.tick.value === 0) ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.06)' },
+          title: { display: true, text: yTitle, color: '#9fb0cc' } },
+  },
+});
+new Chart(document.getElementById('c'),
+  { type: 'line', data: { labels: SEASONS, datasets: PER_SEASON }, options: OPTS('Luck (wins)', true) });
+new Chart(document.getElementById('c2'),
+  { type: 'line', data: { labels: SEASONS, datasets: CUMULATIVE }, options: OPTS('Cumulative luck', true) });
+</script></body></html>
