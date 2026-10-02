@@ -223,7 +223,18 @@ function hero(eyebrow, title, sub, lede) {
 const page = (v, head, body) => `${topnav(v)}${head}<main class="wrap">${body}
   <footer class="foot">El Rancho league history · <a href="#">all seasons</a> · <a href="#v=facts">fun facts</a></footer></main>`;
 // finish -> row class: gold for the champion, silver for the runner-up (Jerry 2026-10-02 12:02)
+// Jerry 2026-10-02 14:58: no "runner-up" wording on the page; the data label stays
+const resTxt = res => res === 'Runner-up' ? 'Lost the final' : res;
 const finCls = res => res === 'Champion' ? 'ch' : res === 'Runner-up' ? 'ru' : '';
+// gold dot on each title season's last regular-season Elo (Elo skips the playoffs) (Jerry 2026-10-02 14:58)
+function titleMarks(m, big) {
+  const E = LG().elo[m] || [];
+  return (LG().lines[m] || []).filter(l => l.res === 'Champion').flatMap(l => {
+    const e = E.filter(e => e[0] === l.y).at(-1);
+    return e ? [{x: e[0] + (e[1] - 1) / 18, y: e[2], r: big ? 7 : 4.5,
+      title: `${full(m)}: ${l.y} champion · Elo ${e[2]} after the regular season`}] : [];
+  });
+}
 const tbl = (rows, cols, rc) => `<table><tr>${cols.map(c => `<th class="${c[2] || ''}">${c[0]}</th>`).join('')}</tr>${rows.map(r =>
   `<tr class="${rc ? rc(r) : ''}">${cols.map(c => `<td class="${c[2] || ''}">${c[1](r)}</td>`).join('')}</tr>`).join('')}</table>`;
 const rec = l => `${l.w}-${l.l}${l.t ? '-' + l.t : ''}`;
@@ -252,6 +263,7 @@ function lineChart(series, o) {
       stroke-linejoin="round" points="${sg.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}"/>`;
     if (s.label && s.pts.length) { const p = s.pts.at(-1); g += `<text x="${X(p[0]) + 6}" y="${Y(p[1]) + 4}" style="fill:${s.col};font-weight:700">${esc(s.label)}</text>`; }
   }
+  for (const k of o.marks || []) g += `<circle class="mk" cx="${X(k.x).toFixed(1)}" cy="${Y(k.y).toFixed(1)}" r="${k.r || 5}" fill="${GOLD}" stroke="#14213d" stroke-width="1.5"><title>${esc(k.title)}</title></circle>`;
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="${W}" style="font-size:${FS}px" role="img" aria-label="${esc(o.aria || 'chart')}">${g}</svg></div>`;
 }
 function scatter(pts, o) {   // pts [{x, y, col, r, op, title, lab, ring}]
@@ -316,7 +328,7 @@ function vManagers() {
       const r = l.rank, t = r ? 1 - (r - 1) / (S[y].n - 1) : null;
       const champ = l.res === 'Champion', ru = l.res === 'Runner-up';
       const bg = champ ? GOLD : ru ? SILVER : t == null ? '#e3e7ee' : divCol(t), ink = champ || ru || t == null ? '#14213d' : divInk(t);
-      return `<td style="background:${bg};color:${ink}" title="${y}: ${esc(l.team || '')} · ${rec(l)} · ${l.res}">${champ ? '🏆' : ru ? '🥈' : r ?? '·'}</td>`;
+      return `<td style="background:${bg};color:${ink}" title="${y}: ${esc(l.team || '')} · ${rec(l)} · ${resTxt(l.res)}">${champ ? '🏆' : ru ? '🥈' : r ?? '·'}</td>`;
     }).join('')}</tr>`;
   }).join('') + '</table>';
   return page('managers', hero('All-time · every manager', 'Managers', 'the all-time table.'),
@@ -326,7 +338,7 @@ function vManagers() {
     <table><tr><th>Manager</th><th class="r xs">Yrs</th><th>W-L-T</th><th class="r">Win %</th><th class="r xs">Pts/g</th><th class="r xs">All-play</th>
     <th class="r">Luck</th><th class="r">Playoffs</th><th class="r xs">Finals</th><th class="r">Titles</th></tr>${rows}</table>
     <div class="sec">Final finish, every season</div>
-    <p class="note">Each cell is the final rank. Gold 🏆 = champion, silver 🥈 = runner-up (lost the final); otherwise blue = top of the league, orange = bottom. ESPN kept no final ranks for 2017 and 2018, so
+    <p class="note">Each cell is the final rank. Gold 🏆 = champion, silver 🥈 = lost the final; otherwise blue = top of the league, orange = bottom. ESPN kept no final ranks for 2017 and 2018, so
       those seasons show only the top three (from the bracket, plus the league's own 3rd-place record); · = played that season.
       A grey cell = not in the league that season: Jerry sat out 2017 and 2018, and Laurel joined in 2026 (taking over from Molly). Points per game are not comparable across eras: scoring moved from Standard to full PPR.</p>
     <div class="chart">${grid}</div>`);
@@ -344,11 +356,11 @@ function vManager(p) {
   const elo = LG().elo[m] || [];
   const years = [...new Set(elo.map(e => e[0]))];
   const eloChart = elo.length ? lineChart([{pts: elo.map(e => [e[0] + (e[1] - 1) / 18, e[2]]), col: '#1c5cab', w: 2}],
-    {hline: 1500, gap: 0.5, xticks: years.map(y => [y + 0.4, '’' + String(y).slice(2)]), aria: 'Elo history', ystep: 50, r: 20})
+    {hline: 1500, gap: 0.5, xticks: years.map(y => [y + 0.4, '’' + String(y).slice(2)]), aria: 'Elo history', ystep: 50, r: 20, marks: titleMarks(m, true)})
     : '<p class="note">No bot Elo for this manager.</p>';
   const seasons = ls.slice().reverse().map(l => `<tr class="go ${finCls(l.res)}" onclick="go({y:${l.y}})"><td class="num">${l.y}</td>
     <td>${esc(l.team || '')}</td><td class="num">${rec(l)}</td><td class="r num">${f1(l.pf)}</td>
-    <td class="r num">${l.rank ?? ''}</td><td>${l.res === 'Champion' ? '🏆 Champion' : l.res}</td><td class="r num">${sgn(l.luck)}</td>
+    <td class="r num">${l.rank ?? ''}</td><td>${l.res === 'Champion' ? '🏆 Champion' : resTxt(l.res)}</td><td class="r num">${sgn(l.luck)}</td>
     <td class="r num">${l.odds != null ? pct(l.odds) : ''}</td></tr>`).join('');
   const h2h = Object.entries(LG().h2h[m] || {}).map(([o, r]) => ({o: +o, r, g: r[0] + r[1] + r[2]})).sort((a, b) => b.g - a.g);
   const hrows = h2h.map(({o, r, g}) => {
@@ -372,6 +384,7 @@ function vManager(p) {
     <div class="grid g4" style="margin-top:24px">${tiles}</div>
     <div class="sec">Elo, every week (league bot)</div>${eloChart}
     <p class="note">The league bot's Elo (v4) after every regular-season game, 2011–2026 (1500 = average, dashed). Everyone restarts at 1500 each season.
+      Gold dot = a title season, placed at the Elo after that regular season (playoff games don't move Elo).
       Projections for this season are on the <a href="#v=live">2026 page</a>.</p>
     <div class="sec">Season by season</div>
     <table><tr><th>Year</th><th>Team</th><th>W-L</th><th class="r">PF</th><th class="r">Rank</th><th>Result</th><th class="r">Luck</th><th class="r">Title odds</th></tr>${seasons}</table>
@@ -540,7 +553,7 @@ function vLuck(p) {
       title: `${nm(m)} ${l.y}: ${rec(l)}, all-play ${l.xw} expected wins (luck ${sgn(l.luck)})${live ? ', season in progress' : ''}`};
   })).sort((a, b) => a.r - b.r);
   const mine = (LG().lines[hl] || []).slice().reverse().map(l => `<tr class="go ${finCls(l.res)}" onclick="go({y:${l.y}})"><td class="num">${l.y}</td><td class="num">${rec(l)}</td>
-    <td class="r num">${f1(l.xw)}</td><td class="r num"><b>${sgn(l.luck)}</b></td><td>${l.res === 'Champion' ? '🏆 Champion' : esc(l.res)}</td>
+    <td class="r num">${f1(l.xw)}</td><td class="r num"><b>${sgn(l.luck)}</b></td><td>${l.res === 'Champion' ? '🏆 Champion' : esc(resTxt(l.res))}</td>
     <td class="r num">${l.odds != null ? pct(l.odds) : ''}</td></tr>`).join('');
 
   // schedule swap, current managers who played that season
@@ -601,9 +614,11 @@ function vElo(p) {
   return page('elo', hero('Ratings · every week since 2011 · the 12 teams in the league now', 'Elo', 'the league bot’s ratings.'),
     `<div class="sec">Elo, every week (${years[0]}–${years.at(-1)})</div>
     <div class="ctl"><select onchange="go({v:'elo', m:this.value})">${opt}</select><span class="sub">highlight a manager</span></div>
-    ${lineChart(series, {hline: 1500, gap: 0.5, xticks: years.map(y => [y + 0.4, '’' + String(y).slice(2)]), aria: 'Elo history', ystep: 50})}
+    ${lineChart(series, {hline: 1500, gap: 0.5, xticks: years.map(y => [y + 0.4, '’' + String(y).slice(2)]), aria: 'Elo history', ystep: 50,
+      marks: ms.filter(m => m !== hl).flatMap(m => titleMarks(m, false)).concat(titleMarks(hl, true))})}
     <p class="note">The league bot's Elo (v4, the model behind its Power Rankings card) after every regular-season game, rebuilt from the scores
-      (1500 = average, dashed). Everyone restarts at 1500 each season; gaps are off-seasons and seasons a manager sat out (Jerry: 2017 and 2018).
+      (1500 = average, dashed). Gold dots = championships, placed at the champion's Elo after that regular season
+      (playoff games don't move Elo); the highlighted manager's are larger. Hover or tap a dot for the year. Everyone restarts at 1500 each season; gaps are off-seasons and seasons a manager sat out (Jerry: 2017 and 2018).
       ${LIVE_Y()} runs through its last finished week; Laurel's line starts in ${LIVE_Y()}. Only the 12 managers in the league now are shown.
       Projections for this season are on the <a href="#v=live">${LIVE_Y()} page</a>.</p>
     <div class="sec">Highs, lows and the last rating</div>
@@ -714,7 +729,7 @@ function vFacts() {
   if (champs.length) add('Cinderella', `${esc(full(champs[0].m))} won the ${champs[0].y} title at ${rec(champs[0])}`,
     `The worst regular-season record by a champion. Title odds the morning the playoffs started: ${pct(champs[0].odds)}.`);
   const nonch = lines.filter(l => l.res !== 'Champion' && l.res !== 'In progress').sort((a, b) => wp(b) - wp(a) || b.pf - a.pf);
-  add('So close', `${esc(full(nonch[0].m))} went ${rec(nonch[0])} in ${nonch[0].y} and didn't win it`, `Result: ${esc(nonch[0].res)}. Title odds that morning: ${pct(nonch[0].odds)}.`);
+  add('So close', `${esc(full(nonch[0].m))} went ${rec(nonch[0])} in ${nonch[0].y} and didn't win it`, `Result: ${esc(resTxt(nonch[0].res))}. Title odds that morning: ${pct(nonch[0].odds)}.`);
   const pfMiss = D.seasons.filter(s => s.y < LIVE_Y()).map(s => lines.filter(l => l.y === s.y).sort((a, b) => b.pf - a.pf)[0]).filter(l => l && l.res === 'Missed');
   if (pfMiss.length) add('Points, no playoffs', `${pfMiss.length} time${pfMiss.length > 1 ? 's' : ''} the league's top scorer missed the playoffs`,
     pfMiss.map(l => `${esc(nm(l.m))} ${l.y} (${f1(l.pf)} pts, ${rec(l)})`).join(' · '));
@@ -1009,7 +1024,7 @@ function index() {
       <div><b class="num">${managersEver}</b><span>managers</span></div></div></div>`;
   const roll = D.seasons.slice().reverse().map(s => {
     const who = s.champ ? `<div class="who"><span class="chip ch">Champion</span>${esc(full(s.champ))}</div><div class="tm serif">${esc(s.champTeam || '')}</div>
-      <div class="dt">${s.ru ? `<span class="chip ru">Runner-up</span>${esc(full(s.ru))} · ` : ''}${s.n} teams · ${esc(s.fmt)}</div>`
+      <div class="dt">${s.ru ? 'def. ' + esc(full(s.ru)) + ' · ' : ''}${s.n} teams · ${esc(s.fmt)}</div>`
       : `<div class="who">Season in progress</div><div class="dt">${s.n} teams · ${esc(s.fmt)}</div>`;
     const fs = s.final ? `<div class="fs"><b class="num">${f1(s.final[0])}–${f1(s.final[1])}</b><span>Final</span></div>` : '<div class="fs"></div>';
     return `<a href="#y=${s.y}"><div class="yr num">${s.y}</div><div>${who}</div>${fs}</a>`;
@@ -1064,7 +1079,7 @@ function summary(s) {
       + ((s.rebuiltTeams || []).includes(t[0]) ? `<div class="sub">Missing from ESPN's team list: record and points summed from the weekly scores; rank is the one ESPN left unused</div>` : '');
     const fc = t[0] === s.champ ? 'ch' : t[0] === s.ru ? 'ru' : t[0] == JERRY ? 'me' : '';
     return `<tr class="${fc}"><td class="num">${t[2] ?? ''}</td>
-    <td>${fc === 'ch' ? '<span class="chip ch">Champion</span>' : fc === 'ru' ? '<span class="chip ru">Runner-up</span>' : ''}<b>${esc(t[1] || '')}</b><div class="sub">${esc(full(t[0]))}</div>${dd}</td>
+    <td>${fc === 'ch' ? '<span class="chip ch">Champion</span>' : ''}<b>${esc(t[1] || '')}</b><div class="sub">${esc(full(t[0]))}</div>${dd}</td>
     <td class="num">${t[3]}-${t[4]}${t[5] ? '-' + t[5] : ''}</td><td class="r num">${f1(t[6])}</td>
     <td class="r num">${f1(t[7])}</td></tr>`;
   }).join('');
@@ -1080,11 +1095,11 @@ function summary(s) {
     ? `<div class="callout"><span class="eyebrow">Note</span>Jerry Porter was not in the league in ${s.y}.</div>` : '';
   const derived = s.derived ? `<p class="note">ESPN has no final-standings record for ${s.y}. These are regular-season
     records added up from the weekly scores, sorted by wins and points; the top three are the league's record (champion,
-    runner-up, and the 3rd-place game winner).
+    the team that lost the final, and the 3rd-place game winner).
     Team names are ESPN's end-of-season names.</p>` : '';
   return `${out}<div class="sec">${s.derived ? 'Regular-season records' : 'Final standings'}</div>${derived}
     <table><tr><th>#</th><th>Team</th><th>W-L</th><th class="r">PF</th><th class="r">PA</th></tr>${rows}</table>
-    ${s.champ ? '<p class="note">Gold = champion, silver = runner-up.</p>' : ''}
+    ${s.champ ? '<p class="note">Gold = champion, silver = lost the final.</p>' : ''}
     ${po ? `<div class="sec">Playoffs</div><table><tr><th>Round</th><th>Week</th><th>Team</th><th>Opponent</th></tr>${po}</table>` : ''}
     <div class="sec">About this season's data</div><ul class="notes">${notes}</ul>`;
 }
