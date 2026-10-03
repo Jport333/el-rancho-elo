@@ -231,7 +231,8 @@ function titleMarks(m, big) {
   const E = LG().elo[m] || [];
   return (LG().lines[m] || []).filter(l => l.res === 'Champion').flatMap(l => {
     const e = E.filter(e => e[0] === l.y).at(-1);
-    return e ? [{x: e[0] + (e[1] - 1) / 18, y: e[2], r: big ? 7 : 4.5,
+    // only the highlighted manager's dots are gold; everyone else's are grey like their lines (Jerry 2026-10-02 15:16)
+    return e ? [{x: e[0] + (e[1] - 1) / 18, y: e[2], r: big ? 7 : 4.5, fill: big ? GOLD : '#c3cad6', stroke: big ? '#14213d' : '#8a94a6',
       title: `${full(m)}: ${l.y} champion · Elo ${e[2]} after the regular season`}] : [];
   });
 }
@@ -263,7 +264,7 @@ function lineChart(series, o) {
       stroke-linejoin="round" points="${sg.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}"/>`;
     if (s.label && s.pts.length) { const p = s.pts.at(-1); g += `<text x="${X(p[0]) + 6}" y="${Y(p[1]) + 4}" style="fill:${s.col};font-weight:700">${esc(s.label)}</text>`; }
   }
-  for (const k of o.marks || []) g += `<circle class="mk" cx="${X(k.x).toFixed(1)}" cy="${Y(k.y).toFixed(1)}" r="${k.r || 5}" fill="${GOLD}" stroke="#14213d" stroke-width="1.5"><title>${esc(k.title)}</title></circle>`;
+  for (const k of o.marks || []) g += `<circle class="mk" cx="${X(k.x).toFixed(1)}" cy="${Y(k.y).toFixed(1)}" r="${k.r || 5}" fill="${k.fill || GOLD}" stroke="${k.stroke || '#14213d'}" stroke-width="1.5"><title>${esc(k.title)}</title></circle>`;
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="${W}" style="font-size:${FS}px" role="img" aria-label="${esc(o.aria || 'chart')}">${g}</svg></div>`;
 }
 function scatter(pts, o) {   // pts [{x, y, col, r, op, title, lab, ring}]
@@ -464,7 +465,7 @@ function vRecords() {
   const lines = Object.entries(LG().lines).flatMap(([m, ls]) => ls.filter(l => l.res !== 'In progress').map(l => ({...l, m: +m, g: l.w + l.l + l.t})));
   const wp = l => (l.w + l.t / 2) / l.g;
   const seasonCols = [['Season', r => r.y], ['Team', r => esc(nm(r.m))], ['W-L', r => rec(r), 'num'], ['Pts/g', r => f1(r1(r.pf / r.g)), 'r num'],
-    ['Result', r => r.res === 'Champion' ? '🏆' : r.res]];
+    ['Result', r => r.res === 'Champion' ? '🏆' : esc(resTxt(r.res))]];
   const P = LG().players, DV = LG().draftValue, PU = LG().pickups, BN = LG().bench;
   const badge = s => s ? ` <span class="badge sv">${esc(s)}</span>` : '';
   const pick = r => `${r[2]}.${String(r[1] - (r[2] - 1) * S[r[0]].n).padStart(2, '0')}`;
@@ -617,8 +618,8 @@ function vElo(p) {
     ${lineChart(series, {hline: 1500, gap: 0.5, xticks: years.map(y => [y + 0.4, '’' + String(y).slice(2)]), aria: 'Elo history', ystep: 50,
       marks: ms.filter(m => m !== hl).flatMap(m => titleMarks(m, false)).concat(titleMarks(hl, true))})}
     <p class="note">The league bot's Elo (v4, the model behind its Power Rankings card) after every regular-season game, rebuilt from the scores
-      (1500 = average, dashed). Gold dots = championships, placed at the champion's Elo after that regular season
-      (playoff games don't move Elo); the highlighted manager's are larger. Hover or tap a dot for the year. Everyone restarts at 1500 each season; gaps are off-seasons and seasons a manager sat out (Jerry: 2017 and 2018).
+      (1500 = average, dashed). Dots = championships, placed at the champion's Elo after that regular season
+      (playoff games don't move Elo); the highlighted manager's are gold, everyone else's are grey. Hover or tap a dot for the year. Everyone restarts at 1500 each season; gaps are off-seasons and seasons a manager sat out (Jerry: 2017 and 2018).
       ${LIVE_Y()} runs through its last finished week; Laurel's line starts in ${LIVE_Y()}. Only the 12 managers in the league now are shown.
       Projections for this season are on the <a href="#v=live">${LIVE_Y()} page</a>.</p>
     <div class="sec">Highs, lows and the last rating</div>
