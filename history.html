@@ -368,13 +368,16 @@ const sides = () => LG().games.flatMap(g => [{y: g[0], w: g[1], m: g[2], s: g[4]
 const RND = {QF: 'Quarterfinal', SF: 'Semifinal', F: 'Final'};
 
 // ---------- Managers
+// One title is a bare 🏆; the count shows from 2 up, as on the bot's cards
+// (Jerry iMessage 2026-11-04 18:44, "only 🏆 x2, x3, and x4").
+const trophies = n => n ? (n > 1 ? '🏆 ' + n : '🏆') : '0';
 function vManagers() {
   const st = Object.values(mgrStats()).sort((a, b) => b.titles - a.titles || b.pct - a.pct);
   const rows = st.map(s => `<tr class="go ${s.m == JERRY ? 'me' : ''}" onclick="go({v:'manager',m:${s.m}})"><td><b>${esc(full(s.m))}</b>
     <div class="sub">${yrs(s.years)}${CUR().has(s.m) ? '' : ' · not in the league now'}</div></td><td class="r num xs">${s.seasons}</td>
     <td class="num">${rec(s)}</td><td class="r num">${pct1(s.pct)}</td><td class="r num xs">${f1(r1(s.ppg))}</td>
     <td class="r num xs">${pct1(s.ap)}</td><td class="r num">${sgn(r1(s.luck))}</td>
-    <td class="r num">${s.po}</td><td class="r num xs">${s.finals}</td><td class="r num">${s.titles ? '🏆 ' + s.titles : '0'}</td></tr>`).join('');
+    <td class="r num">${s.po}</td><td class="r num xs">${s.finals}</td><td class="r num">${trophies(s.titles)}</td></tr>`).join('');
   const years = D.seasons.map(s => s.y);
   const grid = `<table class="hm"><tr><th></th>${years.map(y => `<th>’${String(y).slice(2)}</th>`).join('')}</tr>` + st.map(s => {
     const by = Object.fromEntries(LG().lines[s.m].map(l => [l.y, l]));
@@ -406,7 +409,7 @@ function vManager(p) {
   if (!st) return page('managers', hero('Manager', 'Not found', ''), '');
   const ls = LG().lines[m], tl = LG().titleLuck[m];
   const tiles = [[st.seasons, 'seasons'], [rec(st), 'regular season'], [pct1(st.pct), 'win %'],
-    [st.titles ? '🏆 ' + st.titles : '0', 'titles'], [st.po, 'playoff trips'], [sgn(r1(st.luck)), 'all-play luck (wins)'],
+    [trophies(st.titles), 'titles'], [st.po, 'playoff trips'], [sgn(r1(st.luck)), 'all-play luck (wins)'],
     [tl ? sgn(tl.luck) : '—', 'title luck (titles)'], [tl ? tl.po : '—', 'playoff record']]
     .map(([b, s]) => `<div class="stat"><b class="num">${b}</b><span>${s}</span></div>`).join('');
   const elo = LG().elo[m] || [];
